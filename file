@@ -1,0 +1,56 @@
+import java.net.UnknownHostException;
+import com.mongodb.MongoClient;
+import com.mongodb.ParallelScanOptions;
+import com.mongodb.ServerAddress;
+import com.mongodb.BasicDBObject;
+import com.mongodb.BulkWriteOperation;
+import com.mongodb.BulkWriteResult;
+import com.mongodb.Cursor;
+import com.mongodb.DB;
+import com.mongodb.DBCollection;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+import com.mongodb.BasicDBList;
+import java.util.List;
+public class Main {
+
+    private Object el;
+
+    public static void main(String[] args) {
+
+        MongoClient mongoClient = null;
+        try {
+            mongoClient = new MongoClient("localhost",27017);
+        } catch (UnknownHostException e) {
+            System.out.println(e);
+            e.printStackTrace();
+        }
+        DB db = mongoClient.getDB( "mydb" );
+        DBCollection words = db.getCollection("Words");
+        DBCollection doc = db.getCollection("doc");
+        DBCollection docQueue = db.getCollection("docQueue");
+        DBCursor cursor = words.find();
+        List<DBObject> ls = cursor.toArray();
+        //System.out.println(ls.get(0).get("foundIn"));
+        //System.out.println(ls.get(0).get("foundIn").getClass().getName());
+        BasicDBList _list =  (BasicDBList)ls.get(0).get("foundIn");
+        //System.out.println(_list);
+
+        for(Object el: _list) {
+            //System.out.println(el);
+            List <List<Integer>> kl=(List <List<Integer>>)el;
+            Integer documentNum=(Integer) (Object) kl.get(0);
+            List<Integer> occuranceList =(List<Integer>) kl.get(1);
+            for(Object num: occuranceList) {
+                System.out.println(num);
+            }
+        }
+        /*try {
+            while(cursor.hasNext()) {
+                cursor.next();
+            }
+        } finally {
+            cursor.close();
+        }*/
+    }
+}
