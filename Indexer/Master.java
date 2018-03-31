@@ -6,13 +6,8 @@ public class Master extends Thread{
         indexerObj = ind;
     }
     public void run(){
-        try {
             indexerObj.start();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
     }
 
 }
+
