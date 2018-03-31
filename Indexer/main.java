@@ -2,6 +2,7 @@ import com.mongodb.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Indexes;
+
 import java.io.*;
 import java.util.*;
 
@@ -31,14 +32,13 @@ public class main {
         }
     }
     public static void main(String[] args) throws IOException, InterruptedException {
-        // MongoClientURI connectionString = new MongoClientURI("mongodb://ghada:ghada@ds163796.mlab.com:63796/search_engine");
         Map<String,Boolean> oldFiles=new HashMap<>();
-        File oldFolder = new File("C:\\Users\\ghada\\Documents\\old");
+        File oldFolder = new File("old");
         for (final File fileEntry : oldFolder.listFiles())
             oldFiles.put(fileEntry.getName(),true);
 
         MongoClient mongoClient = new MongoClient("localhost",27017);  //create mongo client
-        MongoDatabase db = mongoClient.getDatabase("search___Engine");
+        MongoDatabase db = mongoClient.getDatabase("searchEngine");
         MongoCollection col;
         String colName = "invertedDocument";
         col = db.getCollection(colName);
@@ -47,7 +47,10 @@ public class main {
         readStopWords();
         indexer ind = new indexer(db,stopWords,col,oldFiles);
         ArrayList<Thread>threads=new ArrayList<Thread>();
-        for(Integer i=0;i<3;++i){
+        System.out.println("Enter number of threads in indexer:");
+        Scanner sc = new Scanner(System.in);
+        Integer th = sc.nextInt();
+        for(Integer i=0;i<th;++i){
             threads.add(new Thread( new Master(ind),"T"+i.toString()));
             threads.get(i).start();
         }
