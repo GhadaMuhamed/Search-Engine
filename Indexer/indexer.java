@@ -4,6 +4,7 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.*;
 import org.bson.Document;
 import org.jsoup.Jsoup;
+
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,9 +16,8 @@ public class indexer extends indexing {
     MongoDatabase db;
     MongoCollection col;
     Map<String,Boolean> oldFiles;
-    public static String newFolderName="C:\\Users\\ghada\\Documents\\new";
-    public static String oldFolderName="C:\\Users\\ghada\\Documents\\old";
-    File newFolder = new File(newFolderName);
+    public static String newFolderName="crawl";
+    public static String oldFolderName="old";
     public indexer( MongoDatabase database, Map<String, Integer> stopWords,MongoCollection c,Map<String,Boolean> of){
         super(stopWords);
         db=database;
@@ -25,36 +25,51 @@ public class indexer extends indexing {
         oldFiles=of;
     }
 
-    public synchronized String getName(Map<String,Boolean> old) throws  InterruptedException {
+    public synchronized String getName(Map<String,Boolean> old)  {
         String name="";
+        File newFolder = new File(newFolderName);
         for (File fileEntry : newFolder.listFiles()){
             name=fileEntry.getName();
-            break;
-        }
-        if (name.equals(""))
-            return name;
-        if (oldFiles.containsKey(name)) {
-            System.out.println("mwgod");
-            try {
+            //System.out.println(Thread.currentThread().getId()+" " +name);
+            //System.out.println(newFolder.length());
+            Boolean flag=oldFiles.containsKey(name);
+            org.jsoup.nodes.Document htmlDocument = null;
+            if (flag) {
                 String f = oldFolderName + "\\" + name;
-                readOld(old, f);
-            } catch (IOException e) {
-                e.printStackTrace();
+                File input=new File(f);
+                try {
+                    htmlDocument = Jsoup.parse(input, "UTF-8", "");
+                } catch (IOException e) {
+                    name="";
+                    continue;
+                }
             }
-        }
-        else oldFiles.put(name,true);
-        try {
-            Path temp = Files.move
-                    (Paths.get(newFolderName+"\\"+name),
-                            Paths.get(oldFolderName+"\\"+name),REPLACE_EXISTING);
-        }
-        catch (IOException e){
-            System.out.println("Error in move files");
+            try {
+                Path temp = Files.move
+                        (Paths.get(newFolderName+"\\"+name),
+                                Paths.get(oldFolderName+"\\"+name),REPLACE_EXISTING);
+            }
+            catch (IOException e){
+                //System.out.println("Error in move files");
+                //System.out.println("Thrad :" +Thread.currentThread().getId());
+
+                //System.out.println("name :" +name);
+                old.clear();
+                name = "";
+                continue;
+            }
+
+            if (!name.equals("")) {
+                if (flag) readOld(htmlDocument,old);
+                else oldFiles.put(name,true);
+                //System.out.println(old.size());
+            }
+            break;
         }
         return name;
     }
 
-    public void start() throws IOException, InterruptedException {
+    public void start() {
         File input=null;
         while (true){
             Map<String,Boolean> old=new HashMap<>();
@@ -69,9 +84,7 @@ public class indexer extends indexing {
             }
         }
     }
-    public void readOld(Map<String,Boolean> old,String in) throws IOException {
-        File input=new File(in);
-        org.jsoup.nodes.Document htmlDocument = Jsoup.parse(input, "UTF-8", "");
+    public void readOld(org.jsoup.nodes.Document htmlDocument , Map<String,Boolean> old) {
         String body = htmlDocument.body().text();
         String title = htmlDocument.title();
         String tmp = "";
@@ -113,13 +126,13 @@ public class indexer extends indexing {
             addOldWords(old, tmp);
         // add words indices to DB
     }
-    public static void addOldWords(Map<String, Boolean> mp,String str) throws IOException {
+    public static void addOldWords(Map<String, Boolean> mp,String str) {
         str = str.replaceAll("[^A-Za-z0-9]", "");
         mp.put(str,true);
     }
 
 
-    public void addWordsToDB(Map<String, List<Integer>> mp,Map<String, Boolean> old, Integer docID,Map<String, Double> tf) throws InterruptedException {
+    public void addWordsToDB(Map<String, List<Integer>> mp,Map<String, Boolean> old, Integer docID,Map<String, Double> tf)  {
         Iterator it = mp.entrySet().iterator();
         List<WriteModel<Document>> writes = new ArrayList<>();
         while (it.hasNext()) {
@@ -160,6 +173,7 @@ public class indexer extends indexing {
             BasicDBObject matchObject = new BasicDBObject("word",str);
             writes.add(new UpdateOneModel<>(matchObject,rem));
         }
+        if (writes.size()<=0) return;
         synchronized (col){
             col.bulkWrite(writes,new BulkWriteOptions().ordered(false));
         }
