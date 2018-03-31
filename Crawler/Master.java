@@ -25,7 +25,7 @@ public class Master implements Job
     private static  int MAX_TH;
     private static final int NUM_RESEED=2000; //el seed hya5d mnha ad a y3ml 3mleha recrawling
     MongoClient mongoClient = new MongoClient( "localhost" , 27017 );  //create mongo client
-    MongoDatabase db = mongoClient.getDatabase("searchengine"); //accessing database
+    MongoDatabase db = mongoClient.getDatabase("searchEngine"); //accessing database
     MongoCollection CollectionState = db.getCollection("State");
     MongoCollection CollectionRNotVisit=db.getCollection("RNotVisit");
     MongoCollection CollectionRVisit=db.getCollection("RVisit");
@@ -132,7 +132,16 @@ public class Master implements Job
 
 
     public void Seeds() throws IOException
-    {
+    {   File file = new File("crawl//");
+        String[] myFiles;
+        if(file.isDirectory())
+        {
+            myFiles = file.list();
+            for (String myFile1 : myFiles) {
+                File myFile = new File(file, myFile1);
+                myFile.delete();
+            }
+        }
         CollectionRNotVisit.drop();
         CollectionRVisit.drop();
         db.createCollection("RNotVisit");
