@@ -54,9 +54,17 @@ public class indexing {
         return ret;
     }
 
-    public  Map<String,Double> Index( File input,Map<String, List<Integer>> mp)throws IOException{
-        org.jsoup.nodes.Document htmlDocument = Jsoup.parse(input, "UTF-8", "");
+    public  Map<String,Double> Index( File input,Map<String, List<Integer>> mp) {
+        org.jsoup.nodes.Document htmlDocument = null;
+        try {
+            htmlDocument = Jsoup.parse(input, "UTF-8", "");
+        } catch (IOException e) {
+            System.out.println("can't parse in index document : " + input.getName());
+        }
+        if (htmlDocument== null)
+            return new HashMap<>();
         String body = htmlDocument.body().text();
+        //System.out.println(body);
         String title = htmlDocument.title();
         String tmp = "";
         title = title.toLowerCase();
@@ -126,7 +134,7 @@ public class indexing {
         // add words indices to DB
         return calculateTf(mp);
     }
-    public static void addWordsToMap(Map<String, List<Integer>> mp,String str,Integer idx) throws IOException {
+    public static void addWordsToMap(Map<String, List<Integer>> mp,String str,Integer idx)  {
         //str = str.replaceAll("[^A-Za-z0-9]", "");
         if (!mp.containsKey(str))
             mp.put(str,new ArrayList<>());
